@@ -1,9 +1,3 @@
-/**
- * @file main.cpp
- * @brief ESP32 Music Player
- * @date 2022-06-30
- */
-
 #include <Arduino.h>
 
 #define LGFX_USE_V1
@@ -196,7 +190,6 @@ struct MPEGFrameHeader {
 /**********************************
  *       各種宣言(グローバル)
  **********************************/
-TaskHandle_t thp[3];
 
 static LGFX_SSD1306 display;
 static LGFX_Sprite canvas(&display);
@@ -722,8 +715,6 @@ size_t getTagData(File file)
     44100, 48000, 32000, 0
   };
 
-  //bool VBR = false;
-
   uint16_t posBuff;
   int tagpos = 0;
 
@@ -756,35 +747,6 @@ size_t getTagData(File file)
   } else {
     file.seek(0);
   }
-
-  #ifdef VBR_ON
-  //Xingヘッダ 読込
-  struct XingHeader xingHeader;
-  file.read(reinterpret_cast<uint8_t*>(&xingHeader), sizeof(uint64_t));
-  if (memcmp(xingHeader.tag, "Xing", 4) == 0) {
-    VBR = true;
-    uint8_t *pXNumFlames = (uint8_t*)&xingHeader.num_flames;
-
-    for (uint8_t i = 0, j = 0x01; i < 4; i++, j << 1) {
-      if ((xingHeader.flags & j) != 0) {
-        posBuff = file.read(reinterpret_cast<uint8_t*>(pXNumFlames), i == 3 ? 100 : sizeof(uint32_t));
-
-        if (posBuff == -1) {
-          return -5;
-        }
-        tagpos += posBuff;
-
-        if (i == 3) {
-          pXNumFlames += 100;
-        } else {
-          pXNumFlames += 4;
-        }
-      }
-    }
-  } else {
-    file.seek(tagpos);
-  }
-  #endif
 
   //MPEGフレームヘッダ 読込
   struct MPEGFrameHeader null_struct = {0};
@@ -1174,8 +1136,6 @@ void mp3Playback(struct Dir *dir, struct Buffer *buffer)
           break;
       }
     }
-
-    //Serial.println(source->getPos());
 
     if (ID3flag == true) {
       screenPlayback(dir);
